@@ -1,15 +1,16 @@
 document.body.onload = init;
 
-x = 0.0;
-y = 0.0;
-z = -5.0;
-rot = 0;
-framerate = 60;
-mousePressed = false;
-targetX = 0;
-targetY = 0;
-tickCounter = 0;
-prof = {
+var ONE_SECOND = 1000;
+var TICK_RATE = 60;
+var TICK_TIME = ONE_SECOND / TICK_RATE
+var currentTime;
+var dots = [];
+var numDots = 1024;
+var mousePressed = false;
+var targetX = 0;
+var targetY = 0;
+var tickCounter = 0;
+var prof = {
   tick: [],
   render: []
 };
@@ -22,6 +23,13 @@ function init() {
   }
   gl.viewportWidth = canvas.width;
   gl.viewportHeight = canvas.height;
+
+  document.addEventListener('keypress', function(e) {
+    if (String.fromCharCode(e.keyCode) === 'r') {
+      numDots =  prompt('How many dots would you like?');
+      initDots();
+    }
+  });
 
   canvas.addEventListener('mousedown', function(e) {
     var rect = canvas.getBoundingClientRect();
@@ -41,67 +49,61 @@ function init() {
       targetY = canvas.height - (e.clientY - rect.top);
     }
   });
-  /*
-  dots = [
-    new Dot(100, 100),
-    new Dot(200, 200),
-    new Dot(300, 300)
-  ];
-  */
-  dots = [];
-  for (var i = 0; i < 1000; i++) {
-    var x = Math.random() * canvas.width;
-    var y = Math.random() * canvas.height;
-    dots.push(new Dot(x, y));
-  }
 
+  initDots();
   initShaders();
   initBuffers();
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
+  var resolutionMatrix = vec2.create();
+  vec2.set(resolutionMatrix, gl.viewportWidth, gl.viewportHeight);
+  gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
 
-
-  setInterval(tick, 1000/framerate);
+  currentTime = performance.now();
+  requestAnimationFrame(tick);
 }
 
-function tick() {
-  var startTime = performance.now();
-  gameTick();
-  prof.tick.push(performance.now() - startTime);
-  startTime = performance.now();
-  drawScene();
-  prof.render.push(performance.now() - startTime);
-  tickCounter++;
-  if (tickCounter % 300 === 0) {
-    var avgTick = prof.tick.reduce(function(p, c) {
-      return p + c;
-    }) / prof.tick.length;
-    var avgRender = prof.render.reduce(function(p, c) {
-      return p + c;
-    }) / prof.render.length;
-    console.log('avgTick: ' + avgTick + ' ms');
-    console.log('avgRend: ' + avgRender + ' ms');
-    console.log('avgFrame: ' + (avgTick + avgRender) + ' ms');
-    prof.tick = [];
-    prof.render = [];
+function tick(newTime) {
+  var frameTime = newTime - currentTime;
+  currentTime = newTime;
+
+  while (frameTime >= TICK_TIME) {
+    gameTick();
+    frameTime -= TICK_TIME;
   }
+  // If there is a substantial part of a partial frame remaining, do sub-step.
+  // Not great, but keeps things generally smooth.
+  // This isn't a critical simulation, so as long as it looks good it's OK.
+  if (frameTime / TICK_TIME > 0.1) {
+    gameTick(frameTime / TICK_TIME);
+  }
+
+  drawScene();
+  requestAnimationFrame(tick);
 }
 
-function gameTick() {
+function gameTick(fraction) {
+  fraction = fraction || 1;
   var target = vec2.create();
   vec2.set(target, targetX, targetY);
   for (var i = 0, len = dots.length; i < len; i++) {
     if (mousePressed) {
-      //var velocity = vec2.create();
-      //vec2.subtract(velocity, target, dots[i].position);
-      //vec2.scale(velocity, velocity, 1 / vec2.length(velocity));
-      dots[i].accelToward(target);
-      //dots[i].velocity = velocity;
+      dots[i].accelToward(target, fraction);
     }
-    dots[i].moveTick();
+    dots[i].moveTick(fraction);
   }
+}
+
+function initDots() {
+  dots = [];
+  for (var i = 0; i < numDots; i++) {
+    var x = Math.random() * gl.viewportWidth;
+    var y = Math.random() * gl.viewportHeight;
+    dots.push(new Dot(x, y));
+  }
+
 }
 
 function initWebGL(canvas) {
@@ -147,16 +149,12 @@ function bufferDots() {
 
 function drawScene() {
   bufferDots();
-  var resolutionMatrix = vec2.create();
-  vec2.set(resolutionMatrix, gl.viewportWidth, gl.viewportHeight);
 
   gl.viewPort = (0, 0, gl.viewportWidth, gl.viewportHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, dotArrayBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, dotArrayBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
 
   gl.drawArrays(gl.POINTS, 0, dotArrayBuffer.numItems);
 }
@@ -205,23 +203,26 @@ var Dot = function(x, y) {
   this.maxAccelerationSq = this.maxAcceleration * this.maxAcceleration;
 }
 
-Dot.prototype.moveTick = function() {
-  vec2.add(this.position, this.position, this.velocity);
+Dot.prototype.moveTick = function(fraction) {
+  var scaledVelocity = vec2.create();
+  vec2.scale(scaledVelocity, this.velocity, fraction);
+  vec2.add(this.position, this.position, scaledVelocity);
 }
 
-Dot.prototype.accelToward = function(position) {
+Dot.prototype.accelToward = function(position, fraction) {
   var targetVelocity = vec2.create();
   vec2.subtract(targetVelocity, position, this.position);
   vec2.scale(targetVelocity, targetVelocity, this.topSpeed / vec2.length(targetVelocity));
-  this.approachVelocity(targetVelocity);
+  this.approachVelocity(targetVelocity, fraction);
 }
 
 // TODO: Is there a better way to do this?
-Dot.prototype.approachVelocity = function(targetVelocity) {
+Dot.prototype.approachVelocity = function(targetVelocity, fraction) {
   var acceleration = vec2.create();
   vec2.subtract(acceleration, targetVelocity, this.velocity);
   if (vec2.squaredLength(acceleration) > this.maxAccelerationSq) {
     vec2.scale(acceleration, acceleration, this.maxAcceleration / vec2.length(acceleration));
   }
+  vec2.scale(acceleration, acceleration, fraction);
   vec2.add(this.velocity, this.velocity, acceleration);
 }
