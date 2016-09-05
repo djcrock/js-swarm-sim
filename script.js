@@ -242,6 +242,7 @@ function touch(e) {
   }
   // The original touch was not found.
   mousePressed = false;
+  touchIdentifier = null;
 }
 
 function moveTarget(x, y) {
