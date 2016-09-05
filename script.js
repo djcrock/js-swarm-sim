@@ -8,6 +8,7 @@ var TICK_TIME = ONE_SECOND / TICK_RATE
 var currentTime;
 var dots = [];
 var numDots = 1024;
+var dotSize = 5.0;
 var mousePressed = false;
 var touchIdentifier;
 var targetX = 0;
@@ -121,6 +122,7 @@ function initShaders() {
   shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'a_Position');
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
   shaderProgram.resolutionUniform = gl.getUniformLocation(shaderProgram, 'u_Resolution');
+  shaderProgram.pointSizeUniform = gl.getUniformLocation(shaderProgram, 'u_PointSize');
 }
 
 function initBuffers() {
@@ -147,6 +149,8 @@ function drawScene() {
   var resolutionMatrix = vec2.create();
   vec2.set(resolutionMatrix, canvas.width, canvas.height);
   gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
+
+  gl.uniform1f(shaderProgram.pointSizeUniform, dotSize);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, dotArrayBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, dotArrayBuffer.itemSize, gl.FLOAT, false, 0, 0);
