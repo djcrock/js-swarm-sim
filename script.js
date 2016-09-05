@@ -9,6 +9,8 @@ var mousePressed = false;
 var touchIdentifier = null;
 var targetX = 0;
 var targetY = 0;
+var target = vec2.create();
+var resolutionMatrix = vec2.create();
 var tickCounter = 0;
 var prof = {
   tick: [],
@@ -22,7 +24,6 @@ function init() {
     return;
   }
 
-  window.addEventListener('resize', resizeCanvas);
 
   document.addEventListener('keypress', function(e) {
     if (String.fromCharCode(e.keyCode) === 'r') {
@@ -40,10 +41,12 @@ function init() {
   canvas.addEventListener('mousemove', moveMouse);
   canvas.addEventListener('touchmove', moveTouch);
 
-  resizeCanvas();
-  initDots();
   initShaders();
   initBuffers();
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  initDots();
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
@@ -60,7 +63,6 @@ function tick() {
 }
 
 function gameTick() {
-  var target = vec2.create();
   vec2.set(target, targetX, targetY);
   for (var i = 0, len = dots.length; i < len; i++) {
     if (mousePressed) {
@@ -126,13 +128,7 @@ function bufferDots() {
 function drawScene() {
   bufferDots();
 
-  gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  var resolutionMatrix = vec2.create();
-  vec2.set(resolutionMatrix, canvas.width, canvas.height);
-  gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
-
   gl.uniform1f(shaderProgram.pointSizeUniform, dotSize);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, dotArrayBuffer);
@@ -182,7 +178,9 @@ function resizeCanvas() {
     canvas.width = width;
     canvas.height = height;
   }
-
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  vec2.set(resolutionMatrix, canvas.width, canvas.height);
+  gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
 }
 
 function startClick(e) {
