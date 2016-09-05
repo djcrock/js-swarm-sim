@@ -59,15 +59,14 @@ function tick() {
   requestAnimationFrame(tick);
 }
 
-function gameTick(fraction) {
-  fraction = fraction || 1;
+function gameTick() {
   var target = vec2.create();
   vec2.set(target, targetX, targetY);
   for (var i = 0, len = dots.length; i < len; i++) {
     if (mousePressed) {
-      dots[i].accelToward(target, fraction);
+      dots[i].accelToward(target);
     }
-    dots[i].moveTick(fraction);
+    dots[i].moveTick();
   }
 }
 
@@ -115,11 +114,12 @@ function initBuffers() {
 }
 
 function bufferDots() {
-  var vertices = dots.reduce(function(verts, dot) {
-    verts.push(dot.position[0], dot.position[1]);
-    return verts;
-  }, []);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  var vertices = new Float32Array(dots.length * 2);
+  for(var i = 0, len = dots.length; i < len; i ++) {
+    vertices[2 * i] = dots[i].position[0];
+    vertices[2 * i + 1] = dots[i].position[1];
+  }
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
   dotArrayBuffer.numItems = dots.length;
 }
 
@@ -236,6 +236,9 @@ function moveTarget(x, y) {
   }
 }
 
+var targetVelocity = vec2.create();
+var acceleration = vec2.create();
+
 var Dot = function(x, y) {
   this.position = vec2.create();
   this.velocity = vec2.create();
@@ -246,26 +249,21 @@ var Dot = function(x, y) {
   this.maxAccelerationSq = this.maxAcceleration * this.maxAcceleration;
 }
 
-Dot.prototype.moveTick = function(fraction) {
-  var scaledVelocity = vec2.create();
-  vec2.scale(scaledVelocity, this.velocity, fraction);
-  vec2.add(this.position, this.position, scaledVelocity);
+Dot.prototype.moveTick = function() {
+  vec2.add(this.position, this.position, this.velocity);
 }
 
-Dot.prototype.accelToward = function(position, fraction) {
-  var targetVelocity = vec2.create();
+Dot.prototype.accelToward = function(position) {
   vec2.subtract(targetVelocity, position, this.position);
   vec2.scale(targetVelocity, targetVelocity, this.topSpeed / vec2.length(targetVelocity));
-  this.approachVelocity(targetVelocity, fraction);
+  this.approachVelocity(targetVelocity);
 }
 
 // TODO: Is there a better way to do this?
-Dot.prototype.approachVelocity = function(targetVelocity, fraction) {
-  var acceleration = vec2.create();
+Dot.prototype.approachVelocity = function(targetVelocity) {
   vec2.subtract(acceleration, targetVelocity, this.velocity);
   if (vec2.squaredLength(acceleration) > this.maxAccelerationSq) {
     vec2.scale(acceleration, acceleration, this.maxAcceleration / vec2.length(acceleration));
   }
-  vec2.scale(acceleration, acceleration, fraction);
   vec2.add(this.velocity, this.velocity, acceleration);
 }
