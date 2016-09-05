@@ -9,6 +9,7 @@ var currentTime;
 var dots = [];
 var numDots = 1024;
 var mousePressed = false;
+var touchIdentifier;
 var targetX = 0;
 var targetY = 0;
 var tickCounter = 0;
@@ -33,24 +34,14 @@ function init() {
     }
   });
 
-  canvas.addEventListener('mousedown', function(e) {
-    var rect = canvas.getBoundingClientRect();
-    targetX = e.clientX - rect.left;
-    targetY = canvas.height - (e.clientY - rect.top);
-    mousePressed = true;
-  });
+  canvas.addEventListener('mousedown', startClick);
+  canvas.addEventListener('touchstart', startTouch);
 
-  canvas.addEventListener('mouseup', function(e) {
-    mousePressed = false;
-  });
+  canvas.addEventListener('mouseup', endClick);
+  canvas.addEventListener('touchend', endClick);
 
-  canvas.addEventListener('mousemove', function(e) {
-    if (mousePressed) {
-      var rect = canvas.getBoundingClientRect();
-      targetX = e.clientX - rect.left;
-      targetY = canvas.height - (e.clientY - rect.top);
-    }
-  });
+  canvas.addEventListener('mousemove', moveMouse);
+  canvas.addEventListener('touchmove', moveTouch);
 
   resizeCanvas();
   initDots();
@@ -205,6 +196,56 @@ function resizeCanvas() {
     canvas.height = height;
   }
 
+}
+
+function startClick(e) {
+  e.preventDefault();
+  mousePressed = true;
+  moveTarget(e.clientX, e.clientY);
+}
+
+function startTouch(e) {
+  e.preventDefault();
+  if (!touchIdentifier) {
+    touchIdentifier = e.touches[0].identifier;
+    mousePressed = true;
+    moveTarget(e.touches[0].pageX, e.touches[0].pageY);
+  }
+}
+
+function moveMouse(e) {
+  e.preventDefault();
+  moveTarget(e.clientX, e.clientY);
+}
+
+function moveTouch(e) {
+  e.preventDefault();
+  moveTarget(e.touches[0].pageX, e.touches[0].pageY);
+}
+
+function endClick(e) {
+  e.preventDefault();
+  mousePressed = false;
+}
+
+function touch(e) {
+  e.preventDefault();
+  for (var i = 0, len = e.touches.length; i < len; i++) {
+    if (e.touches[i].identifier = touchIdentifier) {
+      // The original touch is still active.
+      return;
+    }
+  }
+  // The original touch was not found.
+  mousePressed = false;
+}
+
+function moveTarget(x, y) {
+  if (mousePressed) {
+    var rect = canvas.getBoundingClientRect();
+    targetX = x - rect.left;
+    targetY = canvas.height - (y - rect.top);
+  }
 }
 
 var Dot = function(x, y) {
