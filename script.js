@@ -10,7 +10,7 @@ var dots = [];
 var numDots = 1024;
 var dotSize = 5.0;
 var mousePressed = false;
-var touchIdentifier;
+var touchIdentifier = null;
 var targetX = 0;
 var targetY = 0;
 var tickCounter = 0;
@@ -235,7 +235,7 @@ function endClick(e) {
 function endTouch(e) {
   e.preventDefault();
   for (var i = 0, len = e.touches.length; i < len; i++) {
-    if (e.touches[i].identifier = touchIdentifier) {
+    if (e.touches[i].identifier === touchIdentifier) {
       // The original touch is still active.
       return;
     }
