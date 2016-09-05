@@ -2,10 +2,6 @@ document.body.onload = init;
 
 var canvas;
 var gl;
-var ONE_SECOND = 1000;
-var TICK_RATE = 60;
-var TICK_TIME = ONE_SECOND / TICK_RATE
-var currentTime;
 var dots = [];
 var numDots = 1024;
 var dotSize = 5.0;
@@ -57,21 +53,8 @@ function init() {
   requestAnimationFrame(tick);
 }
 
-function tick(newTime) {
-  var frameTime = newTime - currentTime;
-  currentTime = newTime;
-
-  while (frameTime >= TICK_TIME) {
-    gameTick();
-    frameTime -= TICK_TIME;
-  }
-  // If there is a substantial part of a partial frame remaining, do sub-step.
-  // Not great, but keeps things generally smooth.
-  // This isn't a critical simulation, so as long as it looks good it's OK.
-  if (frameTime / TICK_TIME > 0.1) {
-    gameTick(frameTime / TICK_TIME);
-  }
-
+function tick() {
+  gameTick();
   drawScene();
   requestAnimationFrame(tick);
 }
