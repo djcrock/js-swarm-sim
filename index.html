@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>SwarmSim 2016</title>
+  </head>
+  <body>
+    <canvas id="swarm-canvas" height="900" width="1400"></canvas>
+    <script src="script.js" type="text/javascript"></script>
+    <script src="gl-matrix.js" type="text/javascript"></script>
+    <script id="shader-frag" type="x-shader/x-fragment">
+      precision mediump float;
+
+      void main(void) {
+        float r = 0.0, delta = 0.0, alpha = 1.0;
+        vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+        vec2 cxy = 2.0 * gl_PointCoord - 1.0;
+        r = dot(cxy, cxy);
+        if (r > 1.0) {
+          discard;
+        }
+        gl_FragColor = color * (alpha);
+      }
+    </script>
+    <script id="shader-vert" type="x-shader/x-vertex">
+      attribute vec2 a_Position;
+
+      uniform vec2 u_Resolution;
+
+      void main(void) {
+        vec2 zeroToOne = a_Position / u_Resolution;
+        vec2 zeroToTwo = zeroToOne * 2.0;
+        vec2 clipSpace = zeroToTwo - 1.0;
+        gl_PointSize = 10.0;
+        gl_Position = vec4(clipSpace, 0, 1);
+      }
+    </script>
+  </body>
+</html>
