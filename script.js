@@ -39,7 +39,7 @@ function init() {
   canvas.addEventListener('touchstart', startTouch);
 
   canvas.addEventListener('mouseup', endClick);
-  canvas.addEventListener('touchend', endClick);
+  canvas.addEventListener('touchend', endTouch);
 
   canvas.addEventListener('mousemove', moveMouse);
   canvas.addEventListener('touchmove', moveTouch);
@@ -232,7 +232,7 @@ function endClick(e) {
   mousePressed = false;
 }
 
-function touch(e) {
+function endTouch(e) {
   e.preventDefault();
   for (var i = 0, len = e.touches.length; i < len; i++) {
     if (e.touches[i].identifier = touchIdentifier) {
