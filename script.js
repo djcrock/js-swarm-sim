@@ -1,5 +1,7 @@
 document.body.onload = init;
 
+var canvas;
+var gl;
 var ONE_SECOND = 1000;
 var TICK_RATE = 60;
 var TICK_TIME = ONE_SECOND / TICK_RATE
@@ -16,13 +18,13 @@ var prof = {
 };
 
 function init() {
-  var canvas = document.getElementById('swarm-canvas');
+  canvas = document.getElementById('swarm-canvas');
   gl = initWebGL(canvas);
   if (!gl) {
     return;
   }
-  gl.viewportWidth = canvas.width;
-  gl.viewportHeight = canvas.height;
+
+  window.addEventListener('resize', resizeCanvas);
 
   document.addEventListener('keypress', function(e) {
     if (String.fromCharCode(e.keyCode) === 'r') {
@@ -50,6 +52,7 @@ function init() {
     }
   });
 
+  resizeCanvas();
   initDots();
   initShaders();
   initBuffers();
@@ -57,9 +60,6 @@ function init() {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
-  var resolutionMatrix = vec2.create();
-  vec2.set(resolutionMatrix, gl.viewportWidth, gl.viewportHeight);
-  gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
 
   currentTime = performance.now();
   requestAnimationFrame(tick);
@@ -99,8 +99,8 @@ function gameTick(fraction) {
 function initDots() {
   dots = [];
   for (var i = 0; i < numDots; i++) {
-    var x = Math.random() * gl.viewportWidth;
-    var y = Math.random() * gl.viewportHeight;
+    var x = Math.random() * canvas.width;
+    var y = Math.random() * canvas.height;
     dots.push(new Dot(x, y));
   }
 
@@ -150,8 +150,12 @@ function bufferDots() {
 function drawScene() {
   bufferDots();
 
-  gl.viewPort = (0, 0, gl.viewportWidth, gl.viewportHeight);
+  gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  var resolutionMatrix = vec2.create();
+  vec2.set(resolutionMatrix, canvas.width, canvas.height);
+  gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, dotArrayBuffer);
   gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, dotArrayBuffer.itemSize, gl.FLOAT, false, 0, 0);
@@ -191,6 +195,16 @@ function getShader(gl, scriptId) {
   }
 
   return shader;
+}
+
+function resizeCanvas() {
+  var width = canvas.clientWidth;
+  var height = canvas.clientHeight;
+  if (canvas.width != width || canvas.height != height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
 }
 
 var Dot = function(x, y) {
