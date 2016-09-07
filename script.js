@@ -3,6 +3,7 @@ document.body.onload = init;
 var canvas;
 var gl;
 var dots = [];
+var vertices;
 var numDots = 1024;
 var dotSize = 5.0;
 var mousePressed = false;
@@ -79,7 +80,7 @@ function initDots() {
     var y = Math.random() * canvas.height;
     dots.push(new Dot(x, y));
   }
-
+  vertices = new Float32Array(numDots * 2);
 }
 
 function initWebGL(canvas) {
@@ -116,8 +117,7 @@ function initBuffers() {
 }
 
 function bufferDots() {
-  var vertices = new Float32Array(dots.length * 2);
-  for(var i = 0, len = dots.length; i < len; i ++) {
+  for(var i = 0, len = dots.length; i < len; i++) {
     vertices[2 * i] = dots[i].position[0];
     vertices[2 * i + 1] = dots[i].position[1];
   }
