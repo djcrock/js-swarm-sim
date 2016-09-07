@@ -1,6 +1,7 @@
 document.body.onload = init;
 
 var canvas;
+var boundingClientRect;
 var gl;
 var dots = [];
 var vertices;
@@ -8,8 +9,8 @@ var numDots = 1024;
 var dotSize = 5.0;
 var mousePressed = false;
 var touchIdentifier = null;
-var targetX = 0;
-var targetY = 0;
+var mouseX = 0;
+var mouseY = 0;
 var target = vec2.create();
 var resolutionMatrix = vec2.create();
 var tickCounter = 0;
@@ -64,6 +65,8 @@ function tick() {
 }
 
 function gameTick() {
+  var targetX = mouseX - boundingClientRect.left;
+  var targetY = canvas.height - (mouseY - boundingClientRect.top);
   vec2.set(target, targetX, targetY);
   for (var i = 0, len = dots.length; i < len; i++) {
     if (mousePressed) {
@@ -181,6 +184,7 @@ function resizeCanvas() {
   gl.viewport(0, 0, canvas.width, canvas.height);
   vec2.set(resolutionMatrix, canvas.width, canvas.height);
   gl.uniform2fv(shaderProgram.resolutionUniform, resolutionMatrix);
+  boundingClientRect = canvas.getBoundingClientRect();
 }
 
 function startClick(e) {
@@ -227,11 +231,8 @@ function endTouch(e) {
 }
 
 function moveTarget(x, y) {
-  if (mousePressed) {
-    var rect = canvas.getBoundingClientRect();
-    targetX = x - rect.left;
-    targetY = canvas.height - (y - rect.top);
-  }
+  mouseX = x;
+  mouseY = y;
 }
 
 var targetVelocity = vec2.create();
