@@ -1,9 +1,12 @@
 document.body.onload = init;
 
+var vec2 = window.vec2;
 var canvas;
 var boundingClientRect;
 var gl;
+var shaderProgram;
 var dots = [];
+var dotArrayBuffer;
 var vertices;
 var numDots = 1024;
 var dotSize = 5.0;
@@ -13,11 +16,6 @@ var mouseX = 0;
 var mouseY = 0;
 var target = vec2.create();
 var resolutionMatrix = vec2.create();
-var tickCounter = 0;
-var prof = {
-  tick: [],
-  render: []
-};
 
 function init() {
   canvas = document.getElementById('swarm-canvas');
@@ -54,7 +52,6 @@ function init() {
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
 
-  currentTime = performance.now();
   requestAnimationFrame(tick);
 }
 
@@ -148,7 +145,7 @@ function getShader(gl, scriptId) {
   var script = '';
   var node = scriptElement.firstChild;
   while (node) {
-    if (node.nodeType = Node.TEXT_NODE) {
+    if (node.nodeType == Node.TEXT_NODE) {
       script += node.textContent;
     }
     node = node.nextSibling;
@@ -246,17 +243,17 @@ var Dot = function(x, y) {
   this.topSpeed = 10;
   this.maxAcceleration = 0.1;
   this.maxAccelerationSq = this.maxAcceleration * this.maxAcceleration;
-}
+};
 
 Dot.prototype.moveTick = function() {
   vec2.add(this.position, this.position, this.velocity);
-}
+};
 
 Dot.prototype.accelToward = function(position) {
   vec2.subtract(targetVelocity, position, this.position);
   vec2.scale(targetVelocity, targetVelocity, this.topSpeed / vec2.length(targetVelocity));
   this.approachVelocity(targetVelocity);
-}
+};
 
 // TODO: Is there a better way to do this?
 Dot.prototype.approachVelocity = function(targetVelocity) {
@@ -265,4 +262,4 @@ Dot.prototype.approachVelocity = function(targetVelocity) {
     vec2.scale(acceleration, acceleration, this.maxAcceleration / vec2.length(acceleration));
   }
   vec2.add(this.velocity, this.velocity, acceleration);
-}
+};
