@@ -5,6 +5,14 @@
     },
     "extends": "eslint:recommended",
     "rules": {
+        "brace-style": [
+            "error",
+            "1tbs"
+        ],
+        "eol-last": [
+            "error",
+            "unix"
+        ],
         "indent": [
             "error",
             2
@@ -13,6 +21,21 @@
             "error",
             "unix"
         ],
+        "no-trailing-spaces": [
+            "error",
+            {"skipBlankLines": false}
+        ],
+        "keyword-spacing": [
+            "error",
+            {
+                "before": true,
+                "after": true
+            }
+        ],
+        "padded-blocks": [
+            "error",
+            "never"
+        ],
         "quotes": [
             "error",
             "single"
@@ -20,6 +43,14 @@
         "semi": [
             "error",
             "always"
+        ],
+        "space-before-blocks": [
+            "error",
+            "always"
+        ],
+        "space-before-function-paren": [
+            "error",
+            "never"
         ]
     }
 }

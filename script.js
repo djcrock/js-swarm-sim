@@ -117,7 +117,7 @@ function initBuffers() {
 }
 
 function bufferDots() {
-  for(var i = 0, len = dots.length; i < len; i++) {
+  for (var i = 0, len = dots.length; i < len; i++) {
     vertices[2 * i] = dots[i].position[0];
     vertices[2 * i + 1] = dots[i].position[1];
   }
