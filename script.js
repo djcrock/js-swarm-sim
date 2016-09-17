@@ -121,7 +121,7 @@ function bufferDots() {
     vertices[2 * i] = dots[i].position[0];
     vertices[2 * i + 1] = dots[i].position[1];
   }
-  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
   dotArrayBuffer.numItems = dots.length;
 }
 
