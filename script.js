@@ -17,6 +17,9 @@ var mouseY = 0;
 var target = vec2.create();
 var resolutionMatrix = vec2.create();
 
+// 60 physics ticks per second
+const simulationTickInterval = 1000 / 60;
+
 function init() {
   canvas = document.getElementById('swarm-canvas');
   gl = initWebGL(canvas);
@@ -24,10 +27,9 @@ function init() {
     return;
   }
 
-
   document.addEventListener('keypress', function(e) {
     if (String.fromCharCode(e.keyCode) === 'r') {
-      numDots =  prompt('How many dots would you like?');
+      numDots = prompt('How many dots would you like?');
       initDots();
     }
   });
@@ -55,9 +57,17 @@ function init() {
   requestAnimationFrame(tick);
 }
 
-function tick() {
-  gameTick();
-  drawScene();
+let nextSimulationTick;
+function tick(t) {
+  nextSimulationTick = nextSimulationTick || t;
+  while (nextSimulationTick <= t) {
+    gameTick();
+    nextSimulationTick += simulationTickInterval;
+  }
+  const dt =
+    (simulationTickInterval - (nextSimulationTick - t)) /
+    simulationTickInterval;
+  drawScene(dt);
   requestAnimationFrame(tick);
 }
 
@@ -104,10 +114,19 @@ function initShaders() {
     alert('Unable to initialize shaders!');
   }
   gl.useProgram(shaderProgram);
-  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'a_Position');
+  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(
+    shaderProgram,
+    'a_Position'
+  );
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-  shaderProgram.resolutionUniform = gl.getUniformLocation(shaderProgram, 'u_Resolution');
-  shaderProgram.pointSizeUniform = gl.getUniformLocation(shaderProgram, 'u_PointSize');
+  shaderProgram.resolutionUniform = gl.getUniformLocation(
+    shaderProgram,
+    'u_Resolution'
+  );
+  shaderProgram.pointSizeUniform = gl.getUniformLocation(
+    shaderProgram,
+    'u_PointSize'
+  );
 }
 
 function initBuffers() {
@@ -116,23 +135,30 @@ function initBuffers() {
   dotArrayBuffer.itemSize = 2;
 }
 
-function bufferDots() {
+function bufferDots(dt) {
   for (var i = 0, len = dots.length; i < len; i++) {
-    vertices[2 * i] = dots[i].position[0];
-    vertices[2 * i + 1] = dots[i].position[1];
+    vertices[2 * i] = dots[i].interpolate(0, dt);
+    vertices[2 * i + 1] = dots[i].interpolate(1, dt);
   }
   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
   dotArrayBuffer.numItems = dots.length;
 }
 
-function drawScene() {
-  bufferDots();
+function drawScene(dt) {
+  bufferDots(dt);
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.uniform1f(shaderProgram.pointSizeUniform, dotSize);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, dotArrayBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, dotArrayBuffer.itemSize, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(
+    shaderProgram.vertexPositionAttribute,
+    dotArrayBuffer.itemSize,
+    gl.FLOAT,
+    false,
+    0,
+    0
+  );
 
   gl.drawArrays(gl.POINTS, 0, dotArrayBuffer.numItems);
 }
@@ -238,20 +264,27 @@ var acceleration = vec2.create();
 var Dot = function(x, y) {
   this.position = vec2.create();
   this.velocity = vec2.create();
+  this.prevPosition = vec2.create();
   vec2.set(this.position, x, y);
   vec2.set(this.velocity, 0, 0);
+  vec2.copy(this.prevPosition, this.position);
   this.topSpeed = 10;
   this.maxAcceleration = 0.1;
   this.maxAccelerationSq = this.maxAcceleration * this.maxAcceleration;
 };
 
 Dot.prototype.moveTick = function() {
+  vec2.copy(this.prevPosition, this.position);
   vec2.add(this.position, this.position, this.velocity);
 };
 
 Dot.prototype.accelToward = function(position) {
   vec2.subtract(targetVelocity, position, this.position);
-  vec2.scale(targetVelocity, targetVelocity, this.topSpeed / vec2.length(targetVelocity));
+  vec2.scale(
+    targetVelocity,
+    targetVelocity,
+    this.topSpeed / vec2.length(targetVelocity)
+  );
   this.approachVelocity(targetVelocity);
 };
 
@@ -259,7 +292,18 @@ Dot.prototype.accelToward = function(position) {
 Dot.prototype.approachVelocity = function(targetVelocity) {
   vec2.subtract(acceleration, targetVelocity, this.velocity);
   if (vec2.squaredLength(acceleration) > this.maxAccelerationSq) {
-    vec2.scale(acceleration, acceleration, this.maxAcceleration / vec2.length(acceleration));
+    vec2.scale(
+      acceleration,
+      acceleration,
+      this.maxAcceleration / vec2.length(acceleration)
+    );
   }
   vec2.add(this.velocity, this.velocity, acceleration);
+};
+
+Dot.prototype.interpolate = function(axis, dt) {
+  return (
+    this.prevPosition[axis] +
+    (this.position[axis] - this.prevPosition[axis]) * dt
+  );
 };
