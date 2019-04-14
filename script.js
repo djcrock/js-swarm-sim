@@ -20,6 +20,9 @@ var resolutionMatrix = vec2.create();
 // 60 physics ticks per second
 const simulationTickInterval = 1000 / 60;
 
+let defaultAcceleration = 0.1;
+let defaultTopSpeed = 10;
+
 function init() {
   canvas = document.getElementById('swarm-canvas');
   gl = initWebGL(canvas);
@@ -28,9 +31,25 @@ function init() {
   }
 
   document.addEventListener('keypress', function(e) {
-    if (String.fromCharCode(e.keyCode) === 'r') {
+    switch (String.fromCharCode(e.keyCode)) {
+    case 'r':
       numDots = prompt('How many dots would you like?');
       initDots();
+      break;
+    case 'a':
+      defaultAcceleration = prompt(
+        `Maximum acceleration (default ${defaultAcceleration})`
+      );
+      const defaultAccelerationSq = defaultAcceleration * defaultAcceleration;
+      dots.forEach(d => {
+        d.maxAcceleration = defaultAcceleration;
+        d.maxAccelerationSq = defaultAccelerationSq;
+      });
+      break;
+    case 'v':
+      defaultTopSpeed = prompt(`Top speed (currently ${defaultTopSpeed})`);
+      dots.forEach(d => (d.topSpeed = defaultTopSpeed));
+      break;
     }
   });
 
@@ -268,8 +287,8 @@ var Dot = function(x, y) {
   vec2.set(this.position, x, y);
   vec2.set(this.velocity, 0, 0);
   vec2.copy(this.prevPosition, this.position);
-  this.topSpeed = 10;
-  this.maxAcceleration = 0.1;
+  this.topSpeed = defaultTopSpeed;
+  this.maxAcceleration = defaultAcceleration;
   this.maxAccelerationSq = this.maxAcceleration * this.maxAcceleration;
 };
 
